@@ -23,21 +23,28 @@ def junit(toolName, file):
         file.write(junit_xml.dump())
 
 def dojo_connection(host, api_token, user, proxy, debug=False):
-    #Optionally, specify a proxy
-    proxies = None
-    if proxy:
-        proxies = {
-          'http': proxy,
-          'https': proxy,
+    proxies = (
+        {
+            'http': proxy,
+            'https': proxy,
         }
+        if proxy
+        else None
+    )
 
     if debug:
         requests.packages.urllib3.add_stderr_logger()
 
-    # Instantiate the DefectDojo api wrapper
-    dd = defectdojo.DefectDojoAPIv2(host, api_token, user, api_version="v2", proxies=proxies, verify_ssl=False, timeout=360, debug=debug)
-
-    return dd
+    return defectdojo.DefectDojoAPIv2(
+        host,
+        api_token,
+        user,
+        api_version="v2",
+        proxies=proxies,
+        verify_ssl=False,
+        timeout=360,
+        debug=debug,
+    )
     # Workflow as follows:
     # 1. Scan tool is run against build
     # 2. Reports is saved from scan tool
@@ -48,13 +55,12 @@ def get_user_id(dd, user_name):
     users = dd.list_users(user_name, limit=10)
     user_id = None
 
-    if users.success:
-        if debug:
-            print("users.success")
-        user_id = users.data["results"][0]["id"]
-        return user_id
-    else:
-        raise ValueError('user not found: ' + str(user_name))
+    if not users.success:
+        raise ValueError(f'user not found: {str(user_name)}')
+    if debug:
+        print("users.success")
+    user_id = users.data["results"][0]["id"]
+    return user_id
 
 
 def get_product_id(dd, product_id, product_name):
@@ -74,7 +80,7 @@ def get_product_id(dd, product_id, product_name):
         print("No product found with name: ", product_name)
         print("Available products: ")
         print('\n'.join(map(str, prod_list)))
-        raise ValueError('no product found with product_name ' + product_name)
+        raise ValueError(f'no product found with product_name {product_name}')
     else:
         raise ValueError('product_id or product_name required')
 
@@ -94,7 +100,6 @@ def get_engagement_id(dd, product_id, user_id, engagement_id, engagement_name, b
                     return engagement["id"]
     else:
         raise ValueError('engagement id or name required')
-
 # no engagement found by id or by name, so create a new one
 
     # end_date == last upload
@@ -104,7 +109,7 @@ def get_engagement_id(dd, product_id, user_id, engagement_id, engagement_name, b
     engagement_description = "CI/CD Engagement created by ci/cd script"
 
     if build_url:
-        engagement_description += " for " + build_url
+        engagement_description += f" for {build_url}"
 
     engagement_id = dd.create_engagement(engagement_name_plus_branch, product_id, str(user_id),
     "In Progress", start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"), branch_tag=branch_name, description=engagement_description, build_id=build_id, commit_hash=commit_hash)
@@ -118,8 +123,8 @@ def get_test_id(dd, engagement_id, test_type):
     existing_tests = dd.list_tests(engagement_id)
 
 
-    print('existing_tests: ' + str(existing_tests))
-    print('existing_tests.data: ' + str(existing_tests.data))
+    print(f'existing_tests: {str(existing_tests)}')
+    print(f'existing_tests.data: {str(existing_tests.data)}')
     print('existing_tests.data["count"]: ' + str(existing_tests.data['count']))
     print('existing_tests.data["results"]: ' + str(existing_tests.data['results']))
 
@@ -153,78 +158,88 @@ def processFiles(dd, engagement_id, file, active, verified, close_old_findings, 
     date = datetime.now()
     dojoDate = date.strftime("%Y-%m-%d")
 
-    if scanner == None:
+    if scanner is None:
         #Tools without an importer in Dojo; attempted to import as generic
         if "generic" in name:
             scanner = "Generic Findings Import"
             if tool == "nikto":
-                print("Uploading nikto scan: " + file)
+                print(f"Uploading nikto scan: {file}")
                 test_id = dd.upload_scan(engagement_id, scanner, file, "true", dojoDate, build)
             elif tool == "bandit":
-                print("Uploading bandit scan: " + file)
+                print(f"Uploading bandit scan: {file}")
                 test_id = dd.upload_scan(engagement_id, scanner, file, "true", dojoDate, build)
-        else:
-            if tool == "burp":
-                scannerName = "Burp Scan"
-            elif tool == "nessus":
-                scannerName = "Nessus Scan"
-            elif tool == "nmap":
-                scannerName = "Nmap Scan"
-            elif tool == "nexpose":
-                scannerName = "Nexpose Scan"
-            elif tool == "veracode":
-                scannerName = "Veracode Scan"
-            elif tool == "checkmarx":
-                scannerName = "Checkmarx Scan"
-            elif tool == "zap":
-                scannerName = "ZAP Scan"
-            elif tool == "appspider":
-                scannerName = "AppSpider Scan"
-            elif tool == "Arachni Scan":
-                scannerName = "Arachni Scan"
-            elif tool == "vcg":
-                scannerName = "VCG Scan"
-            elif tool == "dependency":
-                scannerName = "Dependency Check Scan"
-            elif tool == "retirejs":
-                scannerName = "Retire.js Scan"
-            elif tool == "nodesecurity":
-                scannerName = "Node Security Platform Scan"
-            elif tool == "qualys":
-                scannerName = "Qualys Scan"
-            elif tool == "qualyswebapp":
-                scannerName = "Qualys Webapp Scan"
-            elif tool == "openvas":
-                scannerName = "OpenVAS CSV"
-            elif tool == "snyk":
-                scannerName = "Snyk Scan"
+        elif tool == "Arachni Scan":
+            scannerName = "Arachni Scan"
+        elif tool == "appspider":
+            scannerName = "AppSpider Scan"
+        elif tool == "burp":
+            scannerName = "Burp Scan"
+        elif tool == "checkmarx":
+            scannerName = "Checkmarx Scan"
+        elif tool == "dependency":
+            scannerName = "Dependency Check Scan"
+        elif tool == "nessus":
+            scannerName = "Nessus Scan"
+        elif tool == "nexpose":
+            scannerName = "Nexpose Scan"
+        elif tool == "nmap":
+            scannerName = "Nmap Scan"
+        elif tool == "nodesecurity":
+            scannerName = "Node Security Platform Scan"
+        elif tool == "openvas":
+            scannerName = "OpenVAS CSV"
+        elif tool == "qualys":
+            scannerName = "Qualys Scan"
+        elif tool == "qualyswebapp":
+            scannerName = "Qualys Webapp Scan"
+        elif tool == "retirejs":
+            scannerName = "Retire.js Scan"
+        elif tool == "snyk":
+            scannerName = "Snyk Scan"
 
+        elif tool == "vcg":
+            scannerName = "VCG Scan"
+        elif tool == "veracode":
+            scannerName = "Veracode Scan"
+        elif tool == "zap":
+            scannerName = "ZAP Scan"
     else:
         scannerName = scanner
 
     if scannerName is not None:
         # TODO allow providing test_title?
         test_title = None
-        existing_test_id = get_test_id(dd, engagement_id, scannerName)
-        if existing_test_id:
-            print("ReUploading " + scannerName + " scan: " + file + " for engagement: " + str(engagement_id) + " with test_id: " + str(existing_test_id))
+        if existing_test_id := get_test_id(dd, engagement_id, scannerName):
+            print(
+                f"ReUploading {scannerName} scan: {file} for engagement: {str(engagement_id)} with test_id: {str(existing_test_id)}"
+            )
+
             # TODO check verified param?
             test_id = dd.reupload_scan(existing_test_id, scannerName, file, active, dojoDate, build=build, version=version, branch_tag=branch_tag, commit_hash=commit_hash, auto_group_by=auto_group_by)
 
             if test_id.success == False:
-                raise ValueError("ReUpload failed: Detailed error message: " + test_id.data)
+                raise ValueError(f"ReUpload failed: Detailed error message: {test_id.data}")
 
-            print("Done ReUploading  " + scannerName + " scan: " + file + " for engagement: " + str(engagement_id) + " with test_id: " + str(existing_test_id))
+            print(
+                f"Done ReUploading  {scannerName} scan: {file} for engagement: {str(engagement_id)} with test_id: {str(existing_test_id)}"
+            )
+
         else:
-            print("Uploading new " + scannerName + " scan: " + file + " for engagement: " + str(engagement_id))
+            print(
+                f"Uploading new {scannerName} scan: {file} for engagement: {str(engagement_id)}"
+            )
+
             test_id = dd.upload_scan(engagement_id, scannerName, file, active, verified, close_old_findings, skip_duplicates, dojoDate, tags="ci/cd", build=build, version=version, branch_tag=branch_tag, commit_hash=commit_hash, auto_group_by=auto_group_by)
             if test_id.success == False:
-                raise ValueError("Upload failed: Detailed error message: " + test_id.data)
-            print("Done Uploading new " + scannerName + " scan: " + file + " for engagement: " + str(engagement_id))
+                raise ValueError(f"Upload failed: Detailed error message: {test_id.data}")
+            print(
+                f"Done Uploading new {scannerName} scan: {file} for engagement: {str(engagement_id)}"
+            )
+
 
     else:
-         print("unable to determine scannerName")
-         sys.exit()
+        print("unable to determine scannerName")
+        sys.exit()
 
     return test_id
 
@@ -243,29 +258,29 @@ def create_findings(dd, engagement_id, scanner, file, build=None):
             quit()
 
 def summary(dd, engagement_id, test_ids, max_critical=0, max_high=0, max_medium=0):
-        findings = dd.list_findings(engagement_id_in=engagement_id, duplicate="false", active="true", verified="true")
-        print("==============================================")
-        print("Total Number of Vulnerabilities: " + str(findings.data["count"]))
-        print("==============================================")
-        print_findings(sum_severity(findings))
-        print("")
-        findings = dd.list_findings(test_id_in=test_ids, duplicate="true")
-        print("==============================================")
-        print("Total Number of Duplicate Findings: " + str(findings.data["count"]))
-        print("==============================================")
-        print_findings(sum_severity(findings))
-        print("")
-        #Delay while de-dupes
-        sys.stdout.write("Sleeping for 10 seconds for de-dupe celery process:")
+    findings = dd.list_findings(engagement_id_in=engagement_id, duplicate="false", active="true", verified="true")
+    print("==============================================")
+    print("Total Number of Vulnerabilities: " + str(findings.data["count"]))
+    print("==============================================")
+    print_findings(sum_severity(findings))
+    print("")
+    findings = dd.list_findings(test_id_in=test_ids, duplicate="true")
+    print("==============================================")
+    print("Total Number of Duplicate Findings: " + str(findings.data["count"]))
+    print("==============================================")
+    print_findings(sum_severity(findings))
+    print("")
+    #Delay while de-dupes
+    sys.stdout.write("Sleeping for 10 seconds for de-dupe celery process:")
+    sys.stdout.flush()
+    for _ in range(5):
+        time.sleep(2)
+        sys.stdout.write(".")
         sys.stdout.flush()
-        for i in range(5):
-            time.sleep(2)
-            sys.stdout.write(".")
-            sys.stdout.flush()
 
-        findings = dd.list_findings(test_id_in=test_ids, duplicate="false", limit=500)
-        if findings.count() > 0:
-            """
+    findings = dd.list_findings(test_id_in=test_ids, duplicate="false", limit=500)
+    if findings.count() > 0:
+        """
             for finding in findings.data["objects"]:
                 test_cases.append(junit_xml_output.TestCase(finding["title"] + " Severity: " + finding["severity"], finding["description"],"failure"))
             if not os.path.exists("reports"):
@@ -273,29 +288,26 @@ def summary(dd, engagement_id, test_ids, max_critical=0, max_high=0, max_medium=
             junit("DefectDojo", "reports/junit_dojo.xml")
             """
 
-        print("\n==============================================")
-        print("Total Number of New Findings: " + str(findings.data["count"]))
-        print("==============================================")
-        sum_new_findings = sum_severity(findings)
-        print_findings(sum_new_findings)
-        print ("")
-        print("==============================================")
+    print("\n==============================================")
+    print("Total Number of New Findings: " + str(findings.data["count"]))
+    print("==============================================")
+    sum_new_findings = sum_severity(findings)
+    print_findings(sum_new_findings)
+    print ("")
+    print("==============================================")
 
-        strFail = None
-        if max_critical is not None:
-            if sum_new_findings[4] > max_critical:
-                strFail =  "Build Failed: Max Critical"
-        if max_high is not None:
-            if sum_new_findings[3] > max_high:
-                strFail = strFail +  " Max High"
-        if max_medium is not None:
-            if sum_new_findings[2] > max_medium:
-                strFail = strFail +  " Max Medium"
-        if strFail is None:
-            print("Build Passed!")
-        else:
-            print("Build Failed: " + strFail)
-        print("==============================================")
+    strFail = None
+    if max_critical is not None and sum_new_findings[4] > max_critical:
+        strFail =  "Build Failed: Max Critical"
+    if max_high is not None and sum_new_findings[3] > max_high:
+        strFail = f"{strFail} Max High"
+    if max_medium is not None and sum_new_findings[2] > max_medium:
+        strFail = f"{strFail} Max Medium"
+    if strFail is None:
+        print("Build Passed!")
+    else:
+        print(f"Build Failed: {strFail}")
+    print("==============================================")
 
 def sum_severity(findings):
     severity = [0,0,0,0,0]
@@ -314,11 +326,11 @@ def sum_severity(findings):
     return severity
 
 def print_findings(findings):
-    print("Critical: " + str(findings[4]))
-    print("High: " + str(findings[3]))
-    print("Medium: " + str(findings[2]))
-    print("Low: " + str(findings[1]))
-    print("Info: " + str(findings[0]))
+    print(f"Critical: {str(findings[4])}")
+    print(f"High: {str(findings[3])}")
+    print(f"Medium: {str(findings[2])}")
+    print(f"Low: {str(findings[1])}")
+    print(f"Info: {str(findings[0])}")
 
 class Main:
     if __name__ == "__main__":

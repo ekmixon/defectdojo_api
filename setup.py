@@ -25,7 +25,7 @@ setup(
     author='Aaron Weaver',
     author_email='aaron.weaver2@gmail.com',
     url='https://github.com/aaronweaver/defectdojo_api',
-    download_url='https://github.com/aaronweaver/defectdojo_api/tarball/' + version,
+    download_url=f'https://github.com/aaronweaver/defectdojo_api/tarball/{version}',
     license='MIT',
     install_requires=['requests'],
     keywords=['dojo', 'api', 'security', 'software'],
@@ -40,5 +40,5 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
-    ]
+    ],
 )

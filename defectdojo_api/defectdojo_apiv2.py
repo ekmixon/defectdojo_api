@@ -30,7 +30,7 @@ class DefectDojoAPIv2(object):
 
         """
 
-        self.host = host + '/api/' + api_version + '/'
+        self.host = f'{host}/api/{api_version}/'
         self.api_token = api_token
         self.user = user
         self.api_version = api_version
@@ -38,11 +38,7 @@ class DefectDojoAPIv2(object):
         self.proxies = proxies
         self.timeout = timeout
 
-        if not user_agent:
-            self.user_agent = 'DefectDojo_api/' + version
-        else:
-            self.user_agent = user_agent
-
+        self.user_agent = user_agent or f'DefectDojo_api/{version}'
         self.cert = cert
 
         self.logger = logging.getLogger(LOGGER_NAME)
@@ -95,7 +91,7 @@ class DefectDojoAPIv2(object):
         :param user_id: User identification.
 
         """
-        return self._request('GET', 'users/' + str(user_id) + '/')
+        return self._request('GET', f'users/{str(user_id)}/')
 
     ###### Engagements API #######
     def list_engagements(self, status=None, product_id=None, name_contains=None, name=None, limit=20, offset=0):
@@ -136,7 +132,7 @@ class DefectDojoAPIv2(object):
         :param engagement_id: Engagement identification.
 
         """
-        return self._request('GET', 'engagements/' + str(engagement_id) + '/')
+        return self._request('GET', f'engagements/{str(engagement_id)}/')
 
     def create_engagement(self, name, product_id, lead_id, status, target_start, target_end, active='True',
         pen_test='False', check_list='False', threat_model='False', risk_path="",test_strategy="", progress="",
@@ -188,31 +184,31 @@ class DefectDojoAPIv2(object):
         }
 
         if description:
-            data.update({'description': description})
+            data['description'] = description
 
         if build_id:
-            data.update({'build_id': build_id})
+            data['build_id'] = build_id
 
         if commit_hash:
-            data.update({'commit_hash': commit_hash})
+            data['commit_hash'] = commit_hash
 
         if branch_tag:
-            data.update({'branch_tag': branch_tag})
+            data['branch_tag'] = branch_tag
 
         if build_server:
-            data.update({'build_server': build_server})
+            data['build_server'] = build_server
 
         if source_code_management_server:
-            data.update({'source_code_management_server': source_code_management_server})
+            data['source_code_management_server'] = source_code_management_server
 
         if source_code_management_uri:
-            data.update({'source_code_management_uri': source_code_management_uri})
+            data['source_code_management_uri'] = source_code_management_uri
 
         if orchestration_engine:
-            data.update({'orchestration_engine': orchestration_engine})
+            data['orchestration_engine'] = orchestration_engine
 
         if deduplication_on_engagement:
-            data.update({'deduplication_on_engagement': deduplication_on_engagement})
+            data['deduplication_on_engagement'] = deduplication_on_engagement
 
         return self._request('POST', 'engagements/', data=data)
 
@@ -309,7 +305,7 @@ class DefectDojoAPIv2(object):
         if description:
             data['description'] = description
 
-        return self._request('PATCH', 'engagements/' + str(id) + '/', data=data)
+        return self._request('PATCH', f'engagements/{str(id)}/', data=data)
 
     ###### Product API #######
     def set_product_metadata(self, product_id, name=None, value=None):
@@ -324,9 +320,7 @@ class DefectDojoAPIv2(object):
             'name': name,
             'value': value
         }
-        headers = {
-            'product_id': '{}'.format(product_id)
-        }
+        headers = {'product_id': f'{product_id}'}
 
         return self._request('POST', 'metadata/', data=data, custom_headers=headers)
 
@@ -362,7 +356,7 @@ class DefectDojoAPIv2(object):
         :param product_id: Product identification.
 
         """
-        return self._request('GET', 'products/' + str(product_id) + '/')
+        return self._request('GET', f'products/{str(product_id)}/')
 
     def create_product(self, name, description, prod_type):
         """Creates a product with the given properties.
@@ -420,7 +414,7 @@ class DefectDojoAPIv2(object):
         if prod_type:
             data['prod_type'] = prod_type
 
-        return self._request('PUT', 'products/' + str(product_id) + '/', data=data)
+        return self._request('PUT', f'products/{str(product_id)}/', data=data)
 
 
     ###### Test API #######
@@ -454,7 +448,7 @@ class DefectDojoAPIv2(object):
         :param test_id: Test identification.
 
         """
-        return self._request('GET', 'tests/' + str(test_id) + '/')
+        return self._request('GET', f'tests/{str(test_id)}/')
 
     def create_test(self, engagement_id, test_type, environment, target_start,
                     target_end, percent_complete=None, lead=None, title=None,
@@ -526,18 +520,11 @@ class DefectDojoAPIv2(object):
         if environment:
             data['environment'] = environment
 
-        if target_start:
-            data['target_start'] = target_start
-        else:
-            data['target_start'] = current_test["target_start"]
-        if target_end:
-            data['target_end'] = target_end
-        else:
-            data['target_end'] = current_test["target_end"]
-
+        data['target_start'] = target_start or current_test["target_start"]
+        data['target_end'] = target_end or current_test["target_end"]
         if percent_complete:
             data['percent_complete'] = percent_complete
-            
+
         if title:
             data['title'] = title
 
@@ -547,7 +534,7 @@ class DefectDojoAPIv2(object):
         if description:
             data['description'] = description
 
-        return self._request('PUT', 'tests/' + str(test_id) + '/', data=data)
+        return self._request('PUT', f'tests/{str(test_id)}/', data=data)
 
     ###### Findings API #######
     def list_findings(self, active=None, duplicate=None, mitigated=None, severity=None, verified=None, severity_lt=None,
@@ -643,7 +630,7 @@ class DefectDojoAPIv2(object):
         Retrieves a finding using the given finding id.
         :param finding_id: Finding identification.
         """
-        return self._request('GET', 'findings/' + str(finding_id) + '/')
+        return self._request('GET', f'findings/{str(finding_id)}/')
 
     def create_finding(self, title, description, severity, cwe, date, product_id, engagement_id,
         test_id, user_id, impact, active, verified, mitigation, references=None, build=None, line=0,
@@ -771,7 +758,7 @@ class DefectDojoAPIv2(object):
         if build:
             data['build_id'] = build
 
-        return self._request('PUT', 'findings/' + str(finding_id) + '/', data=data)
+        return self._request('PUT', f'findings/{str(finding_id)}/', data=data)
 
     ##### Build Details API #####
 
@@ -909,7 +896,7 @@ class DefectDojoAPIv2(object):
         Retrieves a credential using the given credential id.
         :param credential_id: Credential identification.
         """
-        return self._request('GET', 'credentials/' + str(cred_id) + '/')
+        return self._request('GET', f'credentials/{str(cred_id)}/')
 
     ##### Credential Mapping API #####
 
@@ -948,7 +935,7 @@ class DefectDojoAPIv2(object):
         Retrieves a credential using the given credential id.
         :param cred_mapping_id: Credential identification.
         """
-        return self._request('GET', 'credential_mappings/' + str(cred_mapping_id) + '/')
+        return self._request('GET', f'credential_mappings/{str(cred_mapping_id)}/')
 
     ##### App Analysis API #####
     def list_app_analysis(self, id=None, product_id=None, name=None, limit=20):
@@ -999,7 +986,7 @@ class DefectDojoAPIv2(object):
         Deletes an app analysis using the given id.
         :param id: Language identification.
         """
-        return self._request('DELETE', 'app_analysis/' + str(id) + '/')
+        return self._request('DELETE', f'app_analysis/{str(id)}/')
 
     def delete_all_app_analysis_product(self, product_id):
         """
@@ -1069,7 +1056,7 @@ class DefectDojoAPIv2(object):
         Deletes a language using the given id.
         :param id: Language identification.
         """
-        return self._request('DELETE', 'languages/' + str(id) + '/')
+        return self._request('DELETE', f'languages/{str(id)}/')
 
     def delete_all_languages_product(self, product_id):
         """
@@ -1225,12 +1212,10 @@ class DefectDojoAPIv2(object):
         """Builds a list of POST parameters from a list or single value."""
         params = {}
         if hasattr(values, '__iter__'):
-            index = 0
-            for value in values:
-                params[str(param_name) + '[' + str(index) + '].' + str(key)] = str(value)
-                index += 1
+            for index, value in enumerate(values):
+                params[f'{str(param_name)}[{str(index)}].{str(key)}'] = str(value)
         else:
-            params[str(param_name) + '[0].' + str(key)] = str(values)
+            params[f'{str(param_name)}[0].{str(key)}'] = str(values)
         return params
 
     def _request(self, method, url, params=None, data=None, files=None):
@@ -1243,25 +1228,24 @@ class DefectDojoAPIv2(object):
 
         headers = {
             'User-Agent': self.user_agent,
-            'Authorization' : (("ApiKey "+ self.user + ":" + self.api_token) if (self.api_version=="v1") else ("Token " + self.api_token))
+            'Authorization': f"ApiKey {self.user}:{self.api_token}"
+            if self.api_version == "v1"
+            else f"Token {self.api_token}",
         }
+
 
         if not files:
             headers['Accept'] = 'application/json'
             headers['Content-Type'] = 'application/json'
 
-        if self.proxies:
-            proxies=self.proxies
-        else:
-            proxies = {}
-
+        proxies = self.proxies or {}
         try:
             self.logger.debug("request:")
-            self.logger.debug(method + ' ' + url)
-            self.logger.debug("headers: " + str(headers))
-            self.logger.debug("params:" + str(params))
-            self.logger.debug("data:" + str(data))
-            self.logger.debug("files:" + str(files))
+            self.logger.debug(f'{method} {url}')
+            self.logger.debug(f"headers: {headers}")
+            self.logger.debug(f"params:{str(params)}")
+            self.logger.debug(f"data:{str(data)}")
+            self.logger.debug(f"files:{str(files)}")
 
             response = requests.request(method=method, url=self.host + url, params=params, data=data, files=files, headers=headers,
                                         timeout=self.timeout, verify=self.verify_ssl, cert=self.cert, proxies=proxies)
@@ -1305,8 +1289,12 @@ class DefectDojoAPIv2(object):
             return DefectDojoResponse(message='A connection error occurred.', response_code=response.status_code, success=False)
         except requests.exceptions.Timeout:
             self.logger.warning("The request timed out")
-            return DefectDojoResponse(message='The request timed out after ' + str(self.timeout) + ' seconds.', response_code=response.status_code,
-                                     success=False)
+            return DefectDojoResponse(
+                message=f'The request timed out after {str(self.timeout)} seconds.',
+                response_code=response.status_code,
+                success=False,
+            )
+
         except requests.exceptions.RequestException as e:
             self.logger.warning("There was an error while handling the request.")
             self.logger.exception(e)
@@ -1327,13 +1315,10 @@ class DefectDojoResponse(object):
         self.logger = logging.getLogger(LOGGER_NAME)
 
     def __str__(self):
-        if self.data:
-            return str(self.data)
-        else:
-            return self.message
+        return str(self.data) if self.data else self.message
 
     def id(self):
-        self.logger.debug("response_code" + str(self.response_code))
+        self.logger.debug(f"response_code{str(self.response_code)}")
         if self.response_code == 400: #Bad Request
             raise ValueError('Object not created:' + json.dumps(self.data, sort_keys=True, indent=4, separators=(',', ': ')))
         return int(self.data["id"])

@@ -153,8 +153,15 @@ class TestDefectDojoAPI(unittest.TestCase):
         dir_path = os.path.dirname(os.path.realpath(__file__))
 
         date = datetime.now()
-        upload_scan = self.dd.upload_scan(self.__class__.engagement_id, "Burp Scan", dir_path + "/scans/Bodgeit-burp.xml",
-        "true", date.strftime("%Y/%m/%d"), "API")
+        upload_scan = self.dd.upload_scan(
+            self.__class__.engagement_id,
+            "Burp Scan",
+            f"{dir_path}/scans/Bodgeit-burp.xml",
+            "true",
+            date.strftime("%Y/%m/%d"),
+            "API",
+        )
+
 
         self.assertIsNotNone(upload_scan.id())
 
@@ -163,8 +170,15 @@ class TestDefectDojoAPI(unittest.TestCase):
         dir_path = os.path.dirname(os.path.realpath(__file__))
 
         date = datetime.now()
-        upload_scan = self.dd.upload_scan(self.__class__.test_id, "Burp Scan", dir_path + "/scans/Bodgeit-burp.xml",
-        "true", date.strftime("%Y/%m/%d"), "API")
+        upload_scan = self.dd.upload_scan(
+            self.__class__.test_id,
+            "Burp Scan",
+            f"{dir_path}/scans/Bodgeit-burp.xml",
+            "true",
+            date.strftime("%Y/%m/%d"),
+            "API",
+        )
+
 
         self.assertIsNotNone(upload_scan.id())
 

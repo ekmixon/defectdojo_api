@@ -23,18 +23,24 @@ def junit(toolName, file):
         file.write(junit_xml.dump())
 
 def dojo_connection(host, api_key, user, proxy):
-    #Optionally, specify a proxy
-    proxies = None
-    if proxy:
-        proxies = {
-          'http': proxy,
-          'https': proxy,
+    proxies = (
+        {
+            'http': proxy,
+            'https': proxy,
         }
+        if proxy
+        else None
+    )
 
-    # Instantiate the DefectDojo api wrapper
-    dd = defectdojo.DefectDojoAPI(host, api_key, user, proxies=proxies, verify_ssl=False, timeout=360, debug=False)
-
-    return dd
+    return defectdojo.DefectDojoAPI(
+        host,
+        api_key,
+        user,
+        proxies=proxies,
+        verify_ssl=False,
+        timeout=360,
+        debug=False,
+    )
     # Workflow as follows:
     # 1. Scan tool is run against build
     # 2. Reports is saved from scan tool
@@ -60,15 +66,16 @@ def return_engagement(dd, product_id, user, build_id=None):
     start_date = datetime.now()
     end_date = start_date+timedelta(days=1)
     users = dd.list_users(user)
-    user_id = None
-
-    if users.success:
-        user_id = users.data["objects"][0]["id"]
-
+    user_id = users.data["objects"][0]["id"] if users.success else None
     dojoTime = start_date.strftime("%H:%M:%S")
-    engagementText = "CI/CD Integration (" + dojoTime + ")"
+    engagementText = f"CI/CD Integration ({dojoTime})"
     if build_id is not None:
-        engagementText = engagementText + " - Build #" + build_id + "(" + start_date.strftime("%H:%M:%S") + ")"
+        engagementText = (
+            f"{engagementText} - Build #{build_id}("
+            + start_date.strftime("%H:%M:%S")
+            + ")"
+        )
+
 
     engagement_id = dd.create_engagement(engagementText, product_id, str(user_id),
     "In Progress", start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
